@@ -33,18 +33,16 @@ h1 {
 #playerNameInput label {
     display: block;
     margin: 10px 0 5px;
-    font-size: 16px; /* Set font size to 16px */
+    font-size: 16px;
     font-weight: bold;
     color: #333;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 #playerNameInput input {
-    /*width: 90%;*/
     padding: 8px;
     margin-bottom: 15px;
-    font-size: 16px; /* Set font size to 16px */
-    /* border: 1px solid #ccc; */
+    font-size: 16px;
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
@@ -58,19 +56,20 @@ h1 {
 
 #playerNameInput button {
     padding: 10px 20px;
-    font-size: 16px; /* Set font size to 16px */
+    font-size: 16px;
     background-color: #007bff;
     color: #fff;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Updated box-shadow */
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
 }
 
 #playerNameInput button:hover {
     background-color: #0056b3;
-    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2); /* Updated box-shadow */
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+    transform: scale(1.05);
 }
 
 /* Game Board Section */
@@ -120,6 +119,20 @@ h1 {
     background-color: #ddd;
 }
 
+.cell.winning {
+    background-color: #44d31d; /* Light green for winning cells */
+    animation: highlight 1s infinite alternate;
+}
+
+@keyframes highlight {
+    from {
+        background-color: #44d31d;
+    }
+    to {
+        background-color: #87CEEB;
+    }
+}
+
 /* Status and Messages */
 .message {
     margin: 20px 0;
@@ -139,7 +152,7 @@ h1 {
     cursor: pointer;
     margin-top: 20px;
     box-shadow: 0 4px 6px rgba(12, 1, 1, 0.2);
-    animation: flash 1s infinite alternate; /* Flashing effect */
+    animation: flash 1s infinite alternate;
 }
 
 #restartBtn:hover {
@@ -171,4 +184,37 @@ body.winner {
 
 body.draw {
     background-color: #D3D3D3; /* Gray for draw */
+}
+
+/* Dark Mode */
+body.dark-mode {
+    background-color: #333;
+    color: #fff;
+}
+
+body.dark-mode .cell {
+    background-color: #444;
+    color: #fff;
+}
+
+body.dark-mode button {
+    background-color: #555;
+    color: #fff;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    body {
+        font-size: 14px;
+    }
+    #gameContainer {
+        width: 90%;
+    }
+    .board {
+        width: 100%;
+        height: auto;
+    }
+    .cell {
+        font-size: 1.5rem;
+    }
 }
