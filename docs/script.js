@@ -1,4 +1,12 @@
-import { botMove, makeBotMove } from './bot.js';
+/*
+Updated April 9, 2025-12:33pm
+This will act as the main entry point, importing and initializing the other modules.
+*/
+console.log('script.js loaded');
+import { botMove } from './bot.js';
+import { updateMessage, updateBackground, resetUI } from './ui.js';
+import { checkWin } from './gameLogic.js';
+import { handleCellClick, addEventListeners } from './events.js';
 
 const gameModeSelection = document.getElementById('gameModeSelection');
 const playerNameInput = document.getElementById('playerNameInput');
@@ -18,33 +26,10 @@ let currentPlayer = 'X';
 let gameBoard = ['', '', '', '', '', '', '', '', ''];
 let gameActive = true;
 let playAgainstBot = false;
+let isBotThinking = false;
 
-// Winning conditions
-const winningConditions = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6]
-];
-
-// Update the background based on the current player
-function updateBackground() {
-    if (!gameActive) return; // Do not update background if the game is over
-
-    if (currentPlayer === 'X') {
-        document.body.className = 'player1-turn'; // Set background for Player 1
-    } else {
-        document.body.className = 'player2-turn'; // Set background for Player 2
-    }
-}
-
-// Handle game mode selection
+// Game mode selection
 playBotButton.addEventListener('click', () => {
-    console.log('Play Against Bot clicked');
     playAgainstBot = true;
     gameModeSelection.style.display = 'none';
     playerNameInput.style.display = 'block';
@@ -53,7 +38,6 @@ playBotButton.addEventListener('click', () => {
 });
 
 playFriendButton.addEventListener('click', () => {
-    console.log('Play Against Friend clicked');
     playAgainstBot = false;
     gameModeSelection.style.display = 'none';
     playerNameInput.style.display = 'block';
@@ -61,7 +45,7 @@ playFriendButton.addEventListener('click', () => {
     playerOInput.disabled = false;
 });
 
-// Start the game
+// Start game
 startGameBtn.addEventListener('click', () => {
     const playerX = playerXInput.value || 'Player X';
     const playerO = playAgainstBot ? 'Bot' : (playerOInput.value || 'Player O');
@@ -72,84 +56,74 @@ startGameBtn.addEventListener('click', () => {
     playerNameInput.style.display = 'none';
     gameContainer.style.display = 'block';
 
-    updateMessage();
-    updateBackground(); // Set initial background
+    updateMessage(messageDisplay, currentPlayer);
+    updateBackground(currentPlayer, gameActive);
 });
 
-// Handle cell click
-/*
-This handles switching the player's turn and updating the game board.
-*/
-function handleCellClick(event) {
-    const clickedCell = event.target;
-    const clickedCellIndex = parseInt(clickedCell.dataset.index);
-
-    if (gameBoard[clickedCellIndex] !== '' || !gameActive) {
-        return;
-    }
-
-    gameBoard[clickedCellIndex] = currentPlayer;
-    clickedCell.textContent = currentPlayer;
-
-    checkWin();
-
-    if (gameActive) {
-        if (playAgainstBot && currentPlayer === 'X') {
-            currentPlayer = 'O';
-            updateMessage();
-            updateBackground();
-            setTimeout(() => {
-                botMove(gameBoard, cells, currentPlayer, winningConditions, checkWin, updateMessage, updateBackground, gameActive);
-                currentPlayer = 'X'; // Switch back to Player X after the Bot's move
-                updateMessage();
-                updateBackground();
-            }, 500);
-        } else {
-            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-            updateMessage();
-            updateBackground(); // Update background after turn change
-        }
-    }
-}
-
-// Check for a win or draw
-function checkWin() {
-    for (let condition of winningConditions) {
-        const [a, b, c] = condition;
-        if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
-            messageDisplay.textContent = `${currentPlayer} wins!`;
-            gameActive = false;
-            document.body.className = 'winner'; // Set background to green for winner
-            restartButton.style.display = 'block';
-            return;
-        }
-    }
-
-    if (!gameBoard.includes('')) {
-        messageDisplay.textContent = "It's a draw!";
-        gameActive = false;
-        document.body.className = 'draw'; // Set background to gray for draw
-        restartButton.style.display = 'block';
-    }
-}
-
-// Update the message display
-function updateMessage() {
-    messageDisplay.textContent = `${currentPlayer}'s turn`;
-}
-
-// Restart the game
+// Restart game
 restartButton.addEventListener('click', () => {
     gameBoard = ['', '', '', '', '', '', '', '', ''];
     gameActive = true;
     currentPlayer = 'X';
-    cells.forEach(cell => (cell.textContent = ''));
-    messageDisplay.textContent = '';
-    restartButton.style.display = 'none';
-    document.body.className = ''; // Reset background
-    updateMessage();
-    updateBackground(); // Set background for the first turn
+    isBotThinking = false;
+    resetUI(cells, messageDisplay, restartButton);
+    updateMessage(messageDisplay, currentPlayer);
+    updateBackground(currentPlayer, gameActive);
 });
 
-// Add event listeners to cells
-cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+// Make a move (player or bot)
+function makeMove(cellIndex) {
+    if (!gameActive || gameBoard[cellIndex] !== '') return false;
+
+    gameBoard[cellIndex] = currentPlayer;
+    cells[cellIndex].textContent = currentPlayer;
+
+    const result = checkWin(gameBoard, currentPlayer);
+    if (result) {
+        gameActive = false;
+        if (result.winner === 'draw') {
+            messageDisplay.textContent = "It's a draw!";
+            document.body.className = 'draw';
+        } else {
+            messageDisplay.textContent = `${currentPlayer} wins!`;
+            result.winningCells.forEach(index => cells[index].classList.add('winning'));
+            document.body.className = 'winner';
+        }
+        restartButton.style.display = 'block';
+        return false;
+    }
+
+    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+    updateMessage(messageDisplay, currentPlayer);
+    updateBackground(currentPlayer, gameActive);
+    return true;
+}
+
+// Handle player's move
+function handleMove(cellIndex) {
+    // Don't allow moves during bot's turn
+    if (!gameActive || isBotThinking) return;
+    
+    // Make the player's move
+    if (makeMove(cellIndex)) {
+        // If it's the bot's turn
+        if (playAgainstBot && currentPlayer === 'O' && gameActive) {
+            isBotThinking = true;
+            setTimeout(() => {
+                const botIndex = botMove(gameBoard, cells, currentPlayer);
+                if (botIndex !== undefined && gameBoard[botIndex] === '') {
+                    makeMove(botIndex);
+                }
+                isBotThinking = false;
+            }, 500);
+        }
+    }
+}
+
+// Update the cell click event listeners
+cells.forEach((cell, index) => {
+    cell.addEventListener('click', () => {
+        if (playAgainstBot && currentPlayer === 'O') return; // Prevent clicks during bot's turn
+        handleMove(index);
+    });
+});
